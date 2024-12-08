@@ -15,7 +15,7 @@ func TestLog(t *testing.T) {
 	t.Parallel()
 	dir := "."
 
-	db, err := server.NewTinyDB(path.Join(dir, "filetest"), 400)
+	db, err := server.NewTinyDB(path.Join(dir, "filetest"), 400, 3)
 
 	if err != nil {
 		t.Fatalf("NewTinyDB: %v", err)
