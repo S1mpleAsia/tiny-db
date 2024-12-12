@@ -11,7 +11,7 @@ import (
 
 const (
 	INT_32_BITS = 4
-	UTF_16_SIZE  = 2
+	UTF_16_SIZE = 2
 )
 
 /*
@@ -37,6 +37,10 @@ func (block *BlockId) BlockNumber() int64 {
 	return block.blockNum
 }
 
+func (b *BlockId) Equals(other *BlockId) bool {
+	return b.fileName == other.fileName && b.blockNum == other.blockNum
+}
+
 /*
 A Page object holds the content of a disk block.
 A page can hold int, string or blobs value type (etc. arbitrary arrays of bytes). It's corresponding for a page in RAM memory
@@ -58,45 +62,49 @@ func NewPageWith(buffer []byte) *Page {
 }
 
 func (p *Page) GetInt(offset int) int32 {
-	return int32(binary.LittleEndian.Uint32(p.buffer[offset:offset + INT_32_BITS]))
+	return int32(binary.LittleEndian.Uint32(p.buffer[offset : offset+INT_32_BITS]))
 }
 
 func (p *Page) SetInt(offset int, val int32) {
-	binary.LittleEndian.PutUint32(p.buffer[offset:offset + INT_32_BITS], uint32(val))
+	binary.LittleEndian.PutUint32(p.buffer[offset:offset+INT_32_BITS], uint32(val))
 }
 
 func (p *Page) GetBytes(offset int) []byte {
 	length := p.GetInt(offset)
-	return p.buffer[offset + INT_32_BITS:offset + INT_32_BITS + int(length)]
-}
-
-/* Save a blob as two values:
-	-	First the number of bytes in the specified blob
-	-	Second is the bytes themselves
-
-	+------------+-----------+
-	|  	  4B	 |	  ...	 |
-	+------------+-----------+
-	   len(val)		 val
-*/
-func (p *Page) SetBytes(offset int, val []byte) {
-	p.SetInt(offset, int32(len(val)))
-	copy(p.buffer[offset + INT_32_BITS:], val)
+	return p.buffer[offset+INT_32_BITS : offset+INT_32_BITS+int(length)]
 }
 
 /*
-	Save a string as two values:
-	-	First 4 bytes is store the size of the string
-	-	Second is the string themselves using UTF-16 (16 bit per character)
+	Save a blob as two values:
 
-	+------------+-----------+
-	|  	  4B	 |	  ...	 |
-	+------------+-----------+
-	   len(val)		 val
+-	First the number of bytes in the specified blob
+-	Second is the bytes themselves
+
++------------+-----------+
+|  	  4B	 |	  ...	 |
++------------+-----------+
+
+	len(val)		 val
+*/
+func (p *Page) SetBytes(offset int, val []byte) {
+	p.SetInt(offset, int32(len(val)))
+	copy(p.buffer[offset+INT_32_BITS:], val)
+}
+
+/*
+Save a string as two values:
+-	First 4 bytes is store the size of the string
+-	Second is the string themselves using UTF-16 (16 bit per character)
+
++------------+-----------+
+|  	  4B	 |	  ...	 |
++------------+-----------+
+
+	len(val)		 val
 */
 func (p *Page) GetString(offset int) string {
 	length := int(p.GetInt(offset)) / UTF_16_SIZE
-	
+
 	runes := make([]uint16, length)
 	for i := range length {
 		runes[i] = p.getUint16(offset + INT_32_BITS + i*UTF_16_SIZE)
@@ -110,30 +118,30 @@ func (p *Page) SetString(offset int, val string) {
 	p.SetInt(offset, int32(len(runes)*UTF_16_SIZE))
 
 	for i, r := range runes {
-		p.setUint16(offset + INT_32_BITS + i*UTF_16_SIZE, r)
+		p.setUint16(offset+INT_32_BITS+i*UTF_16_SIZE, r)
 	}
 
 }
 
 func (p *Page) getUint16(offset int) uint16 {
-	return binary.LittleEndian.Uint16(p.buffer[offset:offset + UTF_16_SIZE])
+	return binary.LittleEndian.Uint16(p.buffer[offset : offset+UTF_16_SIZE])
 }
 
 func (p *Page) setUint16(offset int, val uint16) {
-	binary.LittleEndian.PutUint16(p.buffer[offset:offset + UTF_16_SIZE], val)
+	binary.LittleEndian.PutUint16(p.buffer[offset:offset+UTF_16_SIZE], val)
 }
 
 func MaxLength(length int) int {
-	return INT_32_BITS + length * UTF_16_SIZE
+	return INT_32_BITS + length*UTF_16_SIZE
 }
 
 /*
-	FileMgmt responsible for implement methods that read and write page to disk blocks
+FileMgmt responsible for implement methods that read and write page to disk blocks
 */
 type FileMgmt struct {
-	dbDir 		string
-	blockSize 	int64
-	files 		map[string]*os.File
+	dbDir     string
+	blockSize int64
+	files     map[string]*os.File
 }
 
 func NewFileMgmt(dbDir string, blockSize int64) (*FileMgmt, error) {
@@ -167,9 +175,9 @@ func NewFileMgmt(dbDir string, blockSize int64) (*FileMgmt, error) {
 	}
 
 	return &FileMgmt{
-		dbDir: dbDir,
+		dbDir:     dbDir,
 		blockSize: blockSize,
-		files: make(map[string]*os.File),
+		files:     make(map[string]*os.File),
 	}, nil
 }
 
@@ -200,7 +208,7 @@ func (fm *FileMgmt) Read(block *BlockId, p *Page) error {
 
 func (fm *FileMgmt) Write(block *BlockId, p *Page) error {
 	f, err := fm.openFile(block.fileName)
-	
+
 	if err != nil {
 		return fmt.Errorf("fm.openFile: %w", err)
 	}
@@ -233,18 +241,18 @@ func (fm *FileMgmt) Append(fileName string) (*BlockId, error) {
 		return nil, fmt.Errorf("fm.openFile: %w", err)
 	}
 
-	f.Seek(block.blockNum * fm.blockSize, 0)
+	f.Seek(block.blockNum*fm.blockSize, 0)
 	f.Write(b)
 
 	return block, nil
 }
 
 /*
-	Calculate the length of the file -> Return the number of Block that the file already stored 
+Calculate the length of the file -> Return the number of Block that the file already stored
 */
 func (fm *FileMgmt) Length(fileName string) (int64, error) {
 	f, err := fm.openFile(fileName)
-	
+
 	if err != nil {
 		return 0, fmt.Errorf("fm.openFile: %w", err)
 	}

@@ -10,30 +10,30 @@ import (
 )
 
 /*
-	A buffer object keep track of those information about its page:
-	-	block: reference to the block assigned to its page. if no block assigned -> null
-	-	pins: Number of time the page is pinned. The pins count is incremented on each pin and decremented on each unpin
-	-	txNnum: Indicates that the page have been modified. txNum = -1 -> Not been changed, otherwise -> have been changed
-	-	lsn: If the page have been modified -> the buffer holds the lsn of the most recent log record
+A buffer object keep track of those information about its page:
+-	block: reference to the block assigned to its page. if no block assigned -> null
+-	pins: Number of time the page is pinned. The pins count is incremented on each pin and decremented on each unpin
+-	txNnum: Indicates that the page have been modified. txNum = -1 -> Not been changed, otherwise -> have been changed
+-	lsn: If the page have been modified -> the buffer holds the lsn of the most recent log record
 */
 type Buffer struct {
-	fileMgmt 	*file.FileMgmt
-	logMgmt 	*log.LogMgmt
-	contents 	*file.Page
-	block 		*file.BlockId
-	pins 		int
-	txNum 		int
-	lsn 		int
+	fileMgmt *file.FileMgmt
+	logMgmt  *log.LogMgmt
+	contents *file.Page
+	block    *file.BlockId
+	pins     int
+	txNum    int
+	lsn      int
 }
 
-func NewBuffer(fm *file.FileMgmt, lm *log.LogMgmt) (*Buffer) {
+func NewBuffer(fm *file.FileMgmt, lm *log.LogMgmt) *Buffer {
 	return &Buffer{
 		fileMgmt: fm,
-		logMgmt: lm,
+		logMgmt:  lm,
 		contents: file.NewPage(fm.BlockSize()),
-		pins: 0,
-		txNum: -1,
-		lsn: -1,
+		pins:     0,
+		txNum:    -1,
+		lsn:      -1,
 	}
 }
 
@@ -61,7 +61,7 @@ func (buffer *Buffer) ModifyingTx() int {
 }
 
 func (buffer *Buffer) flush() {
-	if (buffer.txNum >= 0) {
+	if buffer.txNum >= 0 {
 		buffer.logMgmt.Flush(buffer.lsn)
 		buffer.fileMgmt.Write(buffer.block, buffer.contents)
 		buffer.txNum = -1
@@ -69,9 +69,9 @@ func (buffer *Buffer) flush() {
 }
 
 /*
-	Associates the buffer with a disk block. 
-	1. The buffer is first flushed, so that any modifications to prev block are preversed
-	2. The buffer then associated with the specified block, reading its contents from disk
+Associates the buffer with a disk block.
+1. The buffer is first flushed, so that any modifications to prev block are preversed
+2. The buffer then associated with the specified block, reading its contents from disk
 */
 func (buffer *Buffer) assignToBlock(block *file.BlockId) {
 	buffer.flush()
@@ -91,21 +91,21 @@ func (buffer *Buffer) unpin() {
 const MAX_TIME = 10 * time.Second
 
 type BufferMgmt struct {
-	bufferPool 		[]*Buffer
-	numAvailable 	int
-	mu				sync.Mutex
-	cond			*sync.Cond
+	bufferPool   []*Buffer
+	numAvailable int
+	mu           sync.Mutex
+	cond         *sync.Cond
 }
 
 func NewBufferMgmt(fm *file.FileMgmt, lm *log.LogMgmt, numBuffs int) *BufferMgmt {
 	bufferPool := make([]*Buffer, numBuffs)
 
-	for	i := range numBuffs {
+	for i := range numBuffs {
 		bufferPool[i] = NewBuffer(fm, lm)
 	}
 
 	bm := &BufferMgmt{
-		bufferPool: bufferPool,
+		bufferPool:   bufferPool,
 		numAvailable: numBuffs,
 	}
 
@@ -136,14 +136,14 @@ func (bm *BufferMgmt) Pin(block *file.BlockId) (*Buffer, error) {
 		}()
 
 		select {
-		case <- timer.C:
+		case <-timer.C:
 			fmt.Println("Timer expired")
 			// Timer expired: do nothing, loop will check conditions again.
-		case <- done:
+		case <-done:
 			fmt.Println("Woken up by Signal or Broadcast")
 			// Woken up by Signal or Broadcast: do nothing, loop will check conditions again.
 		}
-		
+
 		timer.Stop()
 		bm.mu.Lock()
 		buff = bm.tryToPin(block)
@@ -178,7 +178,7 @@ func (bm *BufferMgmt) Available() int {
 func (bm *BufferMgmt) FlushAll(txNum int) {
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	for _, buff := range bm.bufferPool {
 		if buff.ModifyingTx() == txNum {
 			buff.flush()
@@ -199,7 +199,7 @@ func (bm *BufferMgmt) tryToPin(block *file.BlockId) *Buffer {
 	}
 
 	if !buff.IsPinned() {
-		bm.numAvailable--;
+		bm.numAvailable--
 	}
 
 	buff.pin()
@@ -212,7 +212,7 @@ func (bm *BufferMgmt) waitingTooLong(startTime time.Time) bool {
 
 func (bm *BufferMgmt) findExistingBuffer(block *file.BlockId) *Buffer {
 	for _, buff := range bm.bufferPool {
-		if buff.block != nil && buff.block == block {
+		if buff.block != nil && buff.block.Equals(block) {
 			return buff
 		}
 	}
