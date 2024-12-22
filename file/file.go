@@ -141,15 +141,18 @@ FileMgmt responsible for implement methods that read and write page to disk bloc
 type FileMgmt struct {
 	dbDir     string
 	blockSize int64
+	isNew     bool
 	files     map[string]*os.File
 }
 
 func NewFileMgmt(dbDir string, blockSize int64) (*FileMgmt, error) {
+	isNew := false
 	// If not exists, create dbDir recursively
 	if _, err := os.Stat(dbDir); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("os Stat: %w", err)
 		}
+		isNew = true
 
 		err := os.MkdirAll(dbDir, 0o700)
 		if err != nil {
@@ -177,8 +180,13 @@ func NewFileMgmt(dbDir string, blockSize int64) (*FileMgmt, error) {
 	return &FileMgmt{
 		dbDir:     dbDir,
 		blockSize: blockSize,
+		isNew:     isNew,
 		files:     make(map[string]*os.File),
 	}, nil
+}
+
+func (fm *FileMgmt) IsNew() bool {
+	return fm.isNew
 }
 
 func (fm *FileMgmt) BlockSize() int64 {
