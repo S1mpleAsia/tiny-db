@@ -41,7 +41,7 @@ func NewLogRecord(bytes []byte) (LogRecord, error) {
 	case SETSTRING:
 		return newSetStringRecordFrom(p), nil
 	default:
-		return nil, fmt.Errorf("Unknown RecordType: %v", p.GetInt(0))
+		return nil, fmt.Errorf("unknown RecordType: %v", p.GetInt(0))
 	}
 }
 
@@ -395,7 +395,7 @@ func (r *setStringRecord) Undo(tx Transaction) error {
 }
 
 func (r *setStringRecord) String() string {
-	return fmt.Sprintf("<SETSTRING %d %v %d %d>", r.txNum, r.block, r.offset, r.val)
+	return fmt.Sprintf("<SETSTRING %d %v %d %q>", r.txNum, r.block, r.offset, r.val)
 }
 
 func (r *setStringRecord) WriteToLog(lm *log.LogMgmt) (int, error) {

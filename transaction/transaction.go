@@ -81,34 +81,34 @@ func (tx *Transaction) Recover() {
 // Method for access buffers
 func (tx *Transaction) Pin(block *file.BlockId) error {
 	tx.myBuffers.pin(block)
-	fmt.Printf("(%q) Pin(%+v)", block.FileName(), block)
+	fmt.Printf("(%q) Pin(%+v)\n", block.FileName(), block)
 
 	return nil
 }
 
 func (tx *Transaction) Unpin(block *file.BlockId) {
 	tx.myBuffers.unpin(block)
-	fmt.Printf("(%q) Unpin(%+v)", block.FileName(), block)
+	fmt.Printf("(%q) Unpin(%+v)\n", block.FileName(), block)
 }
 
-func (tx *Transaction) GetInt(block *file.BlockId, offset int) int32 {
+func (tx *Transaction) GetInt(block *file.BlockId, offset int) (int32, error) {
 	err := tx.concurMgmt.SLock(*block)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	buff := tx.myBuffers.buffers[block]
-	return buff.Contents().GetInt(offset)
+	return buff.Contents().GetInt(offset), nil
 }
 
-func (tx *Transaction) GetString(block *file.BlockId, offset int) string {
+func (tx *Transaction) GetString(block *file.BlockId, offset int) (string, error) {
 	err := tx.concurMgmt.SLock(*block)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	buff := tx.myBuffers.buffers[block]
-	return buff.Contents().GetString(offset)
+	return buff.Contents().GetString(offset), nil
 }
 
 func (tx *Transaction) SetInt(block *file.BlockId, offset int32, val int32, okToLog bool) error {
@@ -174,6 +174,7 @@ func (tx *Transaction) Size(filename string) int {
 	return int(len)
 }
 
+// Append new block to the file
 func (tx *Transaction) Append(filename string) *file.BlockId {
 	dummyBlock := file.NewBlockId(filename, endOfFile)
 	if err := tx.concurMgmt.XLock(*dummyBlock); err != nil {
@@ -185,7 +186,7 @@ func (tx *Transaction) Append(filename string) *file.BlockId {
 		panic(err)
 	}
 
-	fmt.Printf("(%q) wrote block from append %+v", block.FileName(), block)
+	fmt.Printf("(%q) wrote block from append %+v\n", block.FileName(), block)
 	return block
 }
 
@@ -219,7 +220,7 @@ func newBufferList(bm *buffer.BufferMgmt) *BufferList {
 func (b *BufferList) pin(block *file.BlockId) {
 	buf, err := b.bm.Pin(block)
 	if err != nil {
-		panic(fmt.Sprintf("block %v not pinned", block))
+		panic(fmt.Sprintf("block %v not pinned\n", block))
 	}
 
 	b.buffers[block] = buf
@@ -229,7 +230,7 @@ func (b *BufferList) pin(block *file.BlockId) {
 func (b *BufferList) unpin(block *file.BlockId) {
 	buf, ok := b.buffers[block]
 	if !ok {
-		panic(fmt.Sprintf("block %v not unpinned", block))
+		panic(fmt.Sprintf("block %v not unpinned\n", block))
 	}
 
 	b.bm.Unpin(buf)
@@ -250,7 +251,7 @@ func (b *BufferList) unpinAll() {
 		buf, ok := b.buffers[block]
 
 		if !ok {
-			panic(fmt.Sprintf("block %+v not pinned", block))
+			panic(fmt.Sprintf("block %+v not pinned\n", block))
 		}
 		b.bm.Unpin(buf)
 	}

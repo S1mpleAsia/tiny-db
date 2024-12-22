@@ -37,8 +37,8 @@ func TestTransaction(t *testing.T) {
 	}
 
 	tx2.Pin(block)
-	ival := tx2.GetInt(block, 80)
-	sval := tx2.GetString(block, 40)
+	ival, _ := tx2.GetInt(block, 80)
+	sval, _ := tx2.GetString(block, 40)
 
 	if ival != 1 {
 		t.Fatalf("Expected 1, got %d", ival)
@@ -63,8 +63,8 @@ func TestTransaction(t *testing.T) {
 	}
 	tx3.Pin(block)
 
-	ival = tx3.GetInt(block, 80)
-	sval = tx3.GetString(block, 40)
+	ival, _ = tx3.GetInt(block, 80)
+	sval, _ = tx3.GetString(block, 40)
 
 	if ival != 2 {
 		t.Fatalf("expected one!, got %d", ival)
@@ -79,7 +79,7 @@ func TestTransaction(t *testing.T) {
 	t.Logf("Initial value at location 40 = %s\n", sval)
 
 	tx3.SetInt(block, 80, 9999, true)
-	ival = tx3.GetInt(block, 80)
+	ival, _ = tx3.GetInt(block, 80)
 
 	t.Logf("pre-rollback value at location 80 = %d\n", ival)
 	tx3.Rollback()
@@ -90,7 +90,7 @@ func TestTransaction(t *testing.T) {
 	}
 
 	tx4.Pin(block)
-	ival = tx4.GetInt(block, 80)
+	ival, _ = tx4.GetInt(block, 80)
 	t.Logf("post-rollback value at location 80 = %d\n", ival)
 	if ival != 2 {
 		t.Fatalf("expected 2, got %d", ival)
