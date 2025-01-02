@@ -1,0 +1,122 @@
+package query
+
+import (
+	"strings"
+
+	"s1mpleasia.com/tinydb/record"
+)
+
+/*
+TinyDB basically supports these following strategy:
+-	Expression of constant or field name
+-	A term compare expressions only for equality
+-	A predicate can create only for conjuncts of terms (AND)
+*/
+type Predicate struct {
+	terms []*Term
+}
+
+func NewPredicate() *Predicate {
+	return &Predicate{
+		terms: []*Term{},
+	}
+}
+
+func NewPredicateWithTerm(t *Term) *Predicate {
+	return &Predicate{
+		terms: []*Term{t},
+	}
+}
+
+func (p *Predicate) ConjoinWith(other *Predicate) {
+	p.terms = append(p.terms, other.terms...)
+}
+
+func (p *Predicate) IsSatisfied(scan Scan) (bool, error) {
+	for _, term := range p.terms {
+		isSatisfied, err := term.IsSatisfied(scan)
+		if err != nil {
+			return false, err
+		}
+
+		if !isSatisfied {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (p *Predicate) String() string {
+	var terms []string
+
+	for _, item := range p.terms {
+		terms = append(terms, item.String())
+	}
+
+	return strings.Join(terms, " and ")
+}
+
+// Return the sub-predicate that applies to the specified schema
+func (p *Predicate) SelectSubPred(sch *record.Schema) *Predicate {
+	result := NewPredicate()
+	for _, term := range p.terms {
+		if !term.AppliesTo(sch) {
+			continue
+		}
+
+		result.terms = append(result.terms, term)
+	}
+
+	if len(result.terms) == 0 {
+		return nil
+	}
+
+	return result
+}
+
+// Return the sub-predicate consisting of terms that apply
+// to the union of the two specified schemas
+// but not either schema separately
+func (p *Predicate) JoinSubPred(sch1, sch2 *record.Schema) *Predicate {
+	result := NewPredicate()
+	newSch := record.NewSchema()
+	newSch.AddAll(sch1)
+	newSch.AddAll(sch2)
+
+	for _, term := range p.terms {
+		if term.AppliesTo(sch1) || term.AppliesTo(sch2) || !term.AppliesTo(newSch) {
+			continue
+		}
+
+		result.terms = append(result.terms, term)
+	}
+
+	if len(result.terms) == 0 {
+		return nil
+	}
+
+	return result
+}
+
+func (p *Predicate) EquatesWithField(fieldName string) string {
+	for _, term := range p.terms {
+		f := term.equatesWithField(fieldName)
+		if f != "" {
+			return f
+		}
+	}
+
+	return ""
+}
+
+func (p *Predicate) EquatesWithConstant(fieldName string) *record.Constant {
+	for _, term := range p.terms {
+		c := term.equatesWithConstant(fieldName)
+		if c != nil {
+			return c
+		}
+	}
+
+	return nil
+}
