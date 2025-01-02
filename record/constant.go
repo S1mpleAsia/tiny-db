@@ -47,13 +47,13 @@ func (c *Constant) Equals(target *Constant) bool {
 			return false
 		}
 
-		return c.ival == target.ival
+		return *c.ival == *target.ival
 	} else {
 		if target.sval == nil {
 			return false
 		}
 
-		return c.sval == target.sval
+		return *c.sval == *target.sval
 	}
 }
 
