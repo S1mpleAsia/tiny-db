@@ -9,7 +9,7 @@ import (
 )
 
 func TestLexer(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
 	lex, err := parse.NewLexer("SELECT * from Table_1 where age = 20 and country = 'United Stated';")
 
