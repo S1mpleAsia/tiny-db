@@ -1,6 +1,7 @@
 package query
 
 import (
+	"math"
 	"strings"
 
 	"s1mpleasia.com/tinydb/record"
@@ -119,4 +120,23 @@ func (p *Predicate) EquatesWithConstant(fieldName string) *record.Constant {
 	}
 
 	return nil
+}
+
+type PlanLike interface {
+	DistinctValues(fieldName string) int32
+}
+
+func (p *Predicate) ReductionFactor(plan PlanLike) int32 {
+	reductionFactor := int32(1)
+
+	for _, term := range p.terms {
+		rf := term.reductionFactor(plan)
+		if rf == math.MaxInt32 {
+			return math.MaxInt32
+		}
+
+		reductionFactor *= rf
+	}
+
+	return reductionFactor
 }

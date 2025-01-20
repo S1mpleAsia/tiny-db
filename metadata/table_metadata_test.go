@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"s1mpleasia.com/tinydb/metadata"
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/server"
 )
@@ -100,7 +101,7 @@ func TestCatalog(t *testing.T) {
 		panic(err)
 	}
 
-	ts, err := record.NewTableScan(tx, metadata.TBL_CATALOG_FILE, layout)
+	ts, err := query.NewTableScan(tx, metadata.TBL_CATALOG_FILE, layout)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +126,7 @@ func TestCatalog(t *testing.T) {
 		panic(err)
 	}
 
-	ts, err = record.NewTableScan(tx, metadata.FIELD_CATALOG_FILE, layout)
+	ts, err = query.NewTableScan(tx, metadata.FIELD_CATALOG_FILE, layout)
 	if err != nil {
 		panic(err)
 	}

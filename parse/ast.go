@@ -172,6 +172,10 @@ func NewCreateViewData(viewName string, queryData *QueryData) *CreateViewData {
 	}
 }
 
+func (cv *CreateViewData) ViewName() string {
+	return cv.viewName
+}
+
 func (cv *CreateViewData) ViewDef() string {
 	return cv.queryData.String()
 }

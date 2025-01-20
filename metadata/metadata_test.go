@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/server"
 )
@@ -55,7 +56,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	// Part 2: Statistics metadata
-	ts, err := record.NewTableScan(tx, "mytable", layout)
+	ts, err := query.NewTableScan(tx, "mytable", layout)
 	if err != nil {
 		panic(err)
 	}

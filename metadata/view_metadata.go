@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
@@ -40,7 +41,7 @@ func (vm *ViewMgmt) CreateView(viewName string, viewDef string, tx *transaction.
 		return err
 	}
 
-	ts, err := record.NewTableScan(tx, VIEW_FILE, layout)
+	ts, err := query.NewTableScan(tx, VIEW_FILE, layout)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (vm *ViewMgmt) GetViewDef(viewName string, tx *transaction.Transaction) (st
 		return "", err
 	}
 
-	ts, err := record.NewTableScan(tx, VIEW_FILE, layout)
+	ts, err := query.NewTableScan(tx, VIEW_FILE, layout)
 	if err != nil {
 		return "", err
 	}

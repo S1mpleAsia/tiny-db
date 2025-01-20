@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"math"
 
 	"s1mpleasia.com/tinydb/record"
 )
@@ -37,9 +38,6 @@ func (t *Term) String() string {
 	return fmt.Sprintf("%s = %s", t.lhs, t.rhs)
 }
 
-// The method reductionFactor determines the expected number of records that will sastify the predicate
-// func (t *Term) reductionFactor(p *Plan)
-
 // Determine if this term is of the form "F=C"
 func (t *Term) equatesWithConstant(fieldName string) *record.Constant {
 	if t.lhs.IsFieldName() && t.lhs.AsFieldName() == fieldName && !t.rhs.IsFieldName() {
@@ -60,4 +58,27 @@ func (t *Term) equatesWithField(fieldName string) string {
 	} else {
 		return ""
 	}
+}
+
+// The method reductionFactor determines the expected number of records that will sastify the predicate
+func (t *Term) reductionFactor(p PlanLike) int32 {
+	if t.lhs.IsFieldName() && t.rhs.IsFieldName() {
+		lhsName := t.lhs.AsFieldName()
+		rhsName := t.rhs.AsFieldName()
+		return max(p.DistinctValues(lhsName), p.DistinctValues(rhsName))
+	}
+
+	if t.lhs.IsFieldName() {
+		return p.DistinctValues(t.lhs.AsFieldName())
+	}
+
+	if t.rhs.IsFieldName() {
+		return p.DistinctValues(t.rhs.AsFieldName())
+	}
+
+	if t.lhs.AsConstant().Equals(t.rhs.AsConstant()) {
+		return 1
+	}
+
+	return math.MaxInt32
 }

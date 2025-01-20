@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
@@ -101,7 +102,7 @@ func NewIndexMgmt(isNew bool, tblMgmt *TableMgmt, statMgmt *StatMgmt, tx *transa
 }
 
 func (im *IndexMgmt) CreateIndex(idxName string, tableName string, fieldName string, tx *transaction.Transaction) error {
-	ts, err := record.NewTableScan(tx, INDEX_CATALOG_FILE, im.layout)
+	ts, err := query.NewTableScan(tx, INDEX_CATALOG_FILE, im.layout)
 	if err != nil {
 		return err
 	}
@@ -127,7 +128,7 @@ func (im *IndexMgmt) CreateIndex(idxName string, tableName string, fieldName str
 func (im *IndexMgmt) GetIndexInfo(tableName string, tx *transaction.Transaction) (map[string]*IndexInfo, error) {
 	result := make(map[string]*IndexInfo)
 
-	ts, err := record.NewTableScan(tx, INDEX_CATALOG_FILE, im.layout)
+	ts, err := query.NewTableScan(tx, INDEX_CATALOG_FILE, im.layout)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
@@ -63,7 +64,7 @@ func NewTableMgmt(isNew bool, tx *transaction.Transaction) (*TableMgmt, error) {
 func (tm *TableMgmt) CreateTable(tblName string, sch *record.Schema, tx *transaction.Transaction) error {
 	layout := record.NewLayoutFromSchema(sch)
 
-	tblCat, err := record.NewTableScan(tx, TBL_CATALOG_FILE, tm.tblCatalogLayout)
+	tblCat, err := query.NewTableScan(tx, TBL_CATALOG_FILE, tm.tblCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (tm *TableMgmt) CreateTable(tblName string, sch *record.Schema, tx *transac
 		return err
 	}
 
-	fldCat, err := record.NewTableScan(tx, FIELD_CATALOG_FILE, tm.fldCatalogLayout)
+	fldCat, err := query.NewTableScan(tx, FIELD_CATALOG_FILE, tm.fldCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (tm *TableMgmt) CreateTable(tblName string, sch *record.Schema, tx *transac
 
 func (tm *TableMgmt) GetLayout(tblName string, tx *transaction.Transaction) (*record.Layout, error) {
 	var size int32 = -1
-	tblCat, err := record.NewTableScan(tx, TBL_CATALOG_FILE, tm.tblCatalogLayout)
+	tblCat, err := query.NewTableScan(tx, TBL_CATALOG_FILE, tm.tblCatalogLayout)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func (tm *TableMgmt) GetLayout(tblName string, tx *transaction.Transaction) (*re
 	sch := record.NewSchema()
 	offsets := make(map[string]int32)
 
-	fldCat, err := record.NewTableScan(tx, FIELD_CATALOG_FILE, tm.fldCatalogLayout)
+	fldCat, err := query.NewTableScan(tx, FIELD_CATALOG_FILE, tm.fldCatalogLayout)
 	if err != nil {
 		return nil, err
 	}

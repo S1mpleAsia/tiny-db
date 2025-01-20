@@ -1,23 +1,26 @@
-package record
+package query
 
 import (
 	"errors"
 
 	"s1mpleasia.com/tinydb/file"
+	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
 
 var ErrUnknownFieldType = errors.New("unknown field type")
+var _ Scan = (*TableScan)(nil)
+var _ UpdateScan = (*TableScan)(nil)
 
 type TableScan struct {
 	tx          *transaction.Transaction
-	layout      *Layout
-	recordPage  *RecordPage
+	layout      *record.Layout
+	recordPage  *record.RecordPage
 	fileName    string
 	currentSlot int32
 }
 
-func NewTableScan(tx *transaction.Transaction, tableName string, layout *Layout) (*TableScan, error) {
+func NewTableScan(tx *transaction.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
 	fileName := tableName + ".tbl"
 	ts := &TableScan{
 		tx:       tx,
@@ -42,7 +45,7 @@ func NewTableScan(tx *transaction.Transaction, tableName string, layout *Layout)
 
 func (ts *TableScan) Close() {
 	if ts.recordPage != nil {
-		ts.tx.Unpin(ts.recordPage.block)
+		ts.tx.Unpin(ts.recordPage.Block())
 	}
 }
 
@@ -67,7 +70,7 @@ func (ts *TableScan) Next() bool {
 			return false
 		}
 
-		err = ts.moveToBlock(ts.recordPage.block.BlockNumber() + 1)
+		err = ts.moveToBlock(ts.recordPage.Block().BlockNumber() + 1)
 		if err != nil {
 			return false
 		}
@@ -89,29 +92,29 @@ func (ts *TableScan) GetString(fieldName string) (string, error) {
 	return ts.recordPage.GetString(ts.currentSlot, fieldName)
 }
 
-func (ts *TableScan) GetVal(fieldName string) (*Constant, error) {
-	switch ts.layout.schema.Type(fieldName) {
-	case INT:
+func (ts *TableScan) GetVal(fieldName string) (*record.Constant, error) {
+	switch ts.layout.Schema().Type(fieldName) {
+	case record.INT:
 		val, err := ts.GetInt(fieldName)
 		if err != nil {
 			return nil, err
 		}
 
-		return NewConstantWithInt(val), nil
-	case VARCHAR:
+		return record.NewConstantWithInt(val), nil
+	case record.VARCHAR:
 		val, err := ts.GetString(fieldName)
 		if err != nil {
 			return nil, err
 		}
 
-		return NewConstantWithString(val), nil
+		return record.NewConstantWithString(val), nil
 	default:
 		return nil, ErrUnknownFieldType
 	}
 }
 
 func (ts *TableScan) HasField(fieldName string) bool {
-	return ts.layout.schema.HasField(fieldName)
+	return ts.layout.Schema().HasField(fieldName)
 }
 
 func (ts *TableScan) SetInt(fieldName string, val int32) error {
@@ -122,9 +125,9 @@ func (ts *TableScan) SetString(fieldName string, val string) error {
 	return ts.recordPage.SetString(ts.currentSlot, fieldName, val)
 }
 
-func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
-	switch ts.layout.schema.Type(fieldName) {
-	case INT:
+func (ts *TableScan) SetVal(fieldName string, val *record.Constant) error {
+	switch ts.layout.Schema().Type(fieldName) {
+	case record.INT:
 		ival, err := val.AsInt()
 		if err != nil {
 			return err
@@ -133,7 +136,7 @@ func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 		if err = ts.SetInt(fieldName, ival); err != nil {
 			return err
 		}
-	case VARCHAR:
+	case record.VARCHAR:
 		sval, err := val.AsString()
 		if err != nil {
 			return err
@@ -164,7 +167,7 @@ func (ts *TableScan) Insert() error {
 		if ts.atLastBlock() {
 			err = ts.moveToNewBlock()
 		} else {
-			err = ts.moveToBlock(ts.recordPage.block.BlockNumber() + 1)
+			err = ts.moveToBlock(ts.recordPage.Block().BlockNumber() + 1)
 		}
 
 		if err != nil {
@@ -186,10 +189,10 @@ func (ts *TableScan) Delete() error {
 	return ts.recordPage.Delete(ts.currentSlot)
 }
 
-func (ts *TableScan) MoveToRID(rid *RID) {
+func (ts *TableScan) MoveToRID(rid *record.RID) {
 	ts.Close()
 	block := file.NewBlockId(ts.fileName, int64(rid.BlockNumber()))
-	rp, err := NewRecordPage(ts.tx, block, ts.layout)
+	rp, err := record.NewRecordPage(ts.tx, block, ts.layout)
 	if err != nil {
 		panic(err)
 	}
@@ -197,14 +200,14 @@ func (ts *TableScan) MoveToRID(rid *RID) {
 	ts.currentSlot = rid.Slot()
 }
 
-func (ts *TableScan) GetRID() *RID {
-	return NewRID(int32(ts.recordPage.Block().BlockNumber()), ts.currentSlot)
+func (ts *TableScan) GetRID() *record.RID {
+	return record.NewRID(int32(ts.recordPage.Block().BlockNumber()), ts.currentSlot)
 }
 
 func (ts *TableScan) moveToBlock(blockNum int64) error {
 	ts.Close()
 	block := file.NewBlockId(ts.fileName, blockNum)
-	rp, err := NewRecordPage(ts.tx, block, ts.layout)
+	rp, err := record.NewRecordPage(ts.tx, block, ts.layout)
 	if err != nil {
 		return err
 	}
@@ -217,7 +220,7 @@ func (ts *TableScan) moveToBlock(blockNum int64) error {
 func (ts *TableScan) moveToNewBlock() error {
 	ts.Close()
 	block := ts.tx.Append(ts.fileName)
-	rp, err := NewRecordPage(ts.tx, block, ts.layout)
+	rp, err := record.NewRecordPage(ts.tx, block, ts.layout)
 	if err != nil {
 		return err
 	}

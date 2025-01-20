@@ -1,4 +1,4 @@
-package record_test
+package query_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/server"
 )
@@ -34,7 +35,7 @@ func TestTableScan(t *testing.T) {
 	}
 
 	fmt.Println("filling the table with 50 random records")
-	ts, err := record.NewTableScan(tx, "T", layout)
+	ts, err := query.NewTableScan(tx, "T", layout)
 	if err != nil {
 		panic(err)
 	}

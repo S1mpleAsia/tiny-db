@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
@@ -102,7 +103,7 @@ func (sm *StatMgmt) refreshStatistics(tx *transaction.Transaction) error {
 		return err
 	}
 
-	tblCatalog, err := record.NewTableScan(tx, TBL_CATALOG_FILE, tblCatalogLayout)
+	tblCatalog, err := query.NewTableScan(tx, TBL_CATALOG_FILE, tblCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -134,7 +135,7 @@ func (sm *StatMgmt) calcTableStats(tblName string, layout *record.Layout, tx *tr
 	numRecs := int32(0)
 	numBlocks := int32(0)
 
-	ts, err := record.NewTableScan(tx, tblName, layout)
+	ts, err := query.NewTableScan(tx, tblName, layout)
 	if err != nil {
 		return nil, err
 	}
