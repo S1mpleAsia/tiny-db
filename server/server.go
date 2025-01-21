@@ -7,6 +7,7 @@ import (
 	"s1mpleasia.com/tinydb/file"
 	"s1mpleasia.com/tinydb/log"
 	"s1mpleasia.com/tinydb/metadata"
+	"s1mpleasia.com/tinydb/plan"
 	"s1mpleasia.com/tinydb/transaction"
 )
 
@@ -19,6 +20,7 @@ type TinyDB struct {
 	logMgmt      *log.LogMgmt
 	bufferMgmt   *buffer.BufferMgmt
 	metadataMgmt *metadata.MetadataMgmt
+	planner      *plan.Planner
 }
 
 func NewTinyDB(dbDir string, blockSize int, bufferSize int) (*TinyDB, error) {
@@ -44,10 +46,14 @@ func NewTinyDB(dbDir string, blockSize int, bufferSize int) (*TinyDB, error) {
 }
 
 func NewTinyDBWithMetadata(dirName string) (*TinyDB, error) {
-	return newTinyDBWithMetadata(dirName, BUFFER_SIZE)
+	return newTinyDBWithMetadata(dirName, true, BUFFER_SIZE)
 }
 
-func newTinyDBWithMetadata(dirName string, bufferSize int) (*TinyDB, error) {
+func NewOptimizedTinyDB(dirName string) (*TinyDB, error) {
+	return newTinyDBWithMetadata(dirName, false, BUFFER_SIZE)
+}
+
+func newTinyDBWithMetadata(dirName string, useBasic bool, bufferSize int) (*TinyDB, error) {
 	db, err := NewTinyDB(dirName, BLOCK_SIZE, bufferSize)
 	if err != nil {
 		return nil, fmt.Errorf("SimpleDB: %w", err)
@@ -73,6 +79,18 @@ func newTinyDBWithMetadata(dirName string, bufferSize int) (*TinyDB, error) {
 	}
 	db.metadataMgmt = metadataMgmt
 
+	var queryPlanner plan.QueryPlanner
+	var updatePlanner plan.UpdatePlanner
+
+	if useBasic {
+		queryPlanner = plan.NewBasicQueryPlanner(db.metadataMgmt)
+		updatePlanner = plan.NewBasicUpdatePlanner(db.metadataMgmt)
+	} else {
+		// TODO: Heuristic planner
+	}
+
+	db.planner = plan.NewPlanner(queryPlanner, updatePlanner)
+
 	tx.Commit()
 	return db, nil
 }
@@ -95,4 +113,8 @@ func (db *TinyDB) BufferMgmt() *buffer.BufferMgmt {
 
 func (db *TinyDB) MetadataMgmt() *metadata.MetadataMgmt {
 	return db.metadataMgmt
+}
+
+func (db *TinyDB) Planner() *plan.Planner {
+	return db.planner
 }
