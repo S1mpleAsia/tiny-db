@@ -81,14 +81,14 @@ func (tx *Transaction) Recover() {
 // Method for access buffers
 func (tx *Transaction) Pin(block *file.BlockId) error {
 	tx.myBuffers.pin(block)
-	fmt.Printf("(%q) Pin(%+v)\n", block.FileName(), block)
+	// fmt.Printf("(%q) Pin(%+v)\n", block.FileName(), block)
 
 	return nil
 }
 
 func (tx *Transaction) Unpin(block *file.BlockId) {
 	tx.myBuffers.unpin(block)
-	fmt.Printf("(%q) Unpin(%+v)\n", block.FileName(), block)
+	// fmt.Printf("(%q) Unpin(%+v)\n", block.FileName(), block)
 }
 
 func (tx *Transaction) GetInt(block *file.BlockId, offset int) (int32, error) {

@@ -79,7 +79,11 @@ func TestDriver(t *testing.T) {
 		}
 	}
 
-	// rows6 := delete(t, tx6, )
+	rows6 := updateTable(t, tx6, "delete from player", ctx)
+	if rows6 != 4 {
+		t.Errorf("expected 4 rows affected, but got %d", rows6)
+	}
+	commit(t, tx6)
 }
 
 func beginTx(t *testing.T, db *sql.DB) *sql.Tx {
@@ -103,23 +107,24 @@ func createTable(t *testing.T, tx *sql.Tx, query string, ctx context.Context) {
 	stmt, err := tx.Prepare(query)
 	require.NoError(t, err, "failed to prepare statement")
 
-	_, err = stmt.QueryContext(ctx)
+	_, err = stmt.ExecContext(ctx)
 	require.NoError(t, err, "failed to create table")
 
 	t.Log("created table")
 }
 
-func updateTable(t *testing.T, tx *sql.Tx, query string, ctx context.Context) {
+func updateTable(t *testing.T, tx *sql.Tx, query string, ctx context.Context) int64 {
 	stmt, err := tx.Prepare(query)
 	require.NoError(t, err, "failed to prepare statement")
 
 	result, err := stmt.ExecContext(ctx)
-	require.NoError(t, err, "failed to create table")
+	require.NoError(t, err, "failed to update table")
 
 	rows, err := result.RowsAffected()
 	require.NoError(t, err, "failed to get rows")
 
 	t.Logf("Updated %d rows\n", rows)
+	return rows
 }
 
 func queryPlayer(t *testing.T, tx *sql.Tx, ctx context.Context) []int {

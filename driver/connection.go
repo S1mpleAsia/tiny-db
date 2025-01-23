@@ -38,7 +38,6 @@ func (conn *Connection) BeginTx(ctx context.Context, opts driver.TxOptions) (dri
 }
 
 func (conn *Connection) Close() error {
-	conn.tx.Commit()
 	return nil
 }
 
