@@ -81,7 +81,7 @@ func (it *LogIterator) Next() []byte {
 Responsible for log read/write operations
 -	fileMgmt: Manages file-level operations (etc. reading, writing block from disk)
 -	logFile: Name of the log file
--	logPage: Pointer to a instance of Page, represents a memory buffer for handling a block data in log file
+-	logPage: Pointer to a instance of Page, represents a memory buffer for handling a block data in log file - first 4-bytes store the length
 -	currentBlock: Pointer to a instance of BlockId, identifies the current block in the log file
 -	lastestLSN: LSN that store in the page memory
 -	lastSavedLSN: LSN that was flushed to the disk
@@ -99,7 +99,7 @@ func NewLogMgmt(fileMgmt *file.FileMgmt, logFile string) (*LogMgmt, error) {
 	b := make([]byte, fileMgmt.BlockSize())
 	logPage := file.NewPageWith(b)
 
-	logSize, err := fileMgmt.Length(logFile)
+	logSize, err := fileMgmt.Length(logFile) // logSize in format of nums block
 	if err != nil {
 		return nil, fmt.Errorf("fileMgmt.Length: %w", err)
 	}

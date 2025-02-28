@@ -43,7 +43,7 @@ func TestIndexRetrieval(t *testing.T) {
 	indexInfoMap, err := mdm.GetIndexInfo("student", tx)
 	require.NoError(t, err, "failed to get index info")
 
-	majorIdIndexInfo, ok := indexInfoMap["majorId"]
+	majorIdIndexInfo, ok := indexInfoMap["majorid"]
 	if !ok {
 		t.Fatalf("no index on majorId")
 	}

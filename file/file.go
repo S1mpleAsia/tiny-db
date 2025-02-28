@@ -15,7 +15,8 @@ const (
 )
 
 /*
-A BlockId object identifies a specified block by its name and logical block number
+- A BlockId object identifies a specified block by its name and logical block number
+- BlockNum is 0-indexed
 */
 type BlockId struct {
 	fileName string
@@ -214,6 +215,7 @@ func (fm *FileMgmt) Read(block *BlockId, p *Page) error {
 	return nil
 }
 
+// Write value from page on RAM -> block on disk
 func (fm *FileMgmt) Write(block *BlockId, p *Page) error {
 	f, err := fm.openFile(block.fileName)
 
@@ -255,9 +257,7 @@ func (fm *FileMgmt) Append(fileName string) (*BlockId, error) {
 	return block, nil
 }
 
-/*
-Calculate the length of the file -> Return the number of Block that the file already stored
-*/
+/* Length in number Blocks */
 func (fm *FileMgmt) Length(fileName string) (int64, error) {
 	f, err := fm.openFile(fileName)
 
