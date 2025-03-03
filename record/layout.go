@@ -3,13 +3,14 @@ package record
 import "s1mpleasia.com/tinydb/file"
 
 /*
-	- Layout define the structure of the slot record
-		+ schema: Schema of the slot
-		+ offset: The offset map of all the field in slot
-		+ slotSize: The size in bytes of the slot
-	+--------+-----------+-----------+-----------+
-	|  flag  |  field 1  |  field 2  |  .......  |
-	+--------+-----------+-----------+-----------+
+- Layout define the structure of the slot record
+  - schema: Schema of the slot
+  - offset: The offset map of all the field in slot
+  - slotSize: The size in bytes of the slot
+
++--------+-----------+-----------+-----------+
+|  flag  |  field 1  |  field 2  |  .......  |
++--------+-----------+-----------+-----------+
 */
 type Layout struct {
 	schema   *Schema
