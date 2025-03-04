@@ -6,7 +6,15 @@ import (
 	"s1mpleasia.com/tinydb/transaction"
 )
 
-/*	BTree Page contains common codes for directory and leaf blocks (e.g insert entries, split array of entries) */
+/**
+	BTree Page contains common codes for directory and leaf blocks (e.g insert entries, split array of entries)
+- Records need to be maintained in sorted order
+- Records does not need have a permanent id, which means they can move around within the page
+- A page is able to split its records to another page
+- Each page have a flag (A dir page uses flag to hold its level
+						A leaf page uses flag for overflow block)
+*/
+
 type BTreePage struct {
 	tx           *transaction.Transaction
 	currentBlock *file.BlockId
@@ -27,8 +35,8 @@ func NewBTreePage(tx *transaction.Transaction, currentBlock *file.BlockId, layou
 	return btreePage, nil
 }
 
-func (bp *BTreePage) FindSlotBefore(searchKey *record.Constant) int {
-	slot := 0
+func (bp *BTreePage) FindSlotBefore(searchKey *record.Constant) int32 {
+	var slot int32 = 0
 	numRecs, err := bp.GetNumRecs()
 
 	if err != nil {
@@ -40,7 +48,7 @@ func (bp *BTreePage) FindSlotBefore(searchKey *record.Constant) int {
 		panic(err)
 	}
 
-	for slot < int(numRecs) && compare < 0 {
+	for slot < numRecs && compare < 0 {
 		slot++
 	}
 
