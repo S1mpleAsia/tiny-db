@@ -19,7 +19,7 @@ type Layout struct {
 }
 
 func NewLayoutFromSchema(sch *Schema) *Layout {
-	pos := int32(file.INT_32_BITS) // 1 bytes for store flag
+	pos := int32(file.INT_32_BITS) // 4 bytes for store flag
 	offset := make(map[string]int32)
 
 	layout := &Layout{
@@ -54,6 +54,8 @@ func (l *Layout) SlotSize() int32 {
 	return l.slotSize
 }
 
+// INT - 4 bytes
+// VARCHAR - (Schema bytes) for val + (4 bytes) for the actual length
 func (l *Layout) lengthInBytes(fieldName string) int32 {
 	fieldType := l.schema.Type(fieldName)
 

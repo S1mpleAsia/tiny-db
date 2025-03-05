@@ -19,12 +19,17 @@ type BTreeLeaf struct {
 func NewBTreeLeaf(tx *transaction.Transaction, block *file.BlockId, layout *record.Layout, searchKey *record.Constant) *BTreeLeaf {
 	contents := &BTreePage{tx, block, layout}
 
+	slot, err := contents.FindSlotBefore(searchKey)
+	if err != nil {
+		panic(err)
+	}
+
 	return &BTreeLeaf{
 		tx:          tx,
 		layout:      layout,
 		searchKey:   searchKey,
 		contents:    contents,
-		currentSlot: contents.FindSlotBefore(searchKey),
+		currentSlot: slot,
 		fileName:    block.FileName(),
 	}
 }
