@@ -33,18 +33,20 @@ func (bLeaf *BTreeLeaf) Close() {
 }
 
 func (bLeaf *BTreeLeaf) Next() bool {
-	bLeaf.currentSlot++
-	numRecs, err := bLeaf.contents.GetNumRecs()
-	if err != nil {
-		panic(err)
-	}
+	return false
+}
 
-	if bLeaf.currentSlot >= numRecs {
-		// tryOverflow()
-		return true
-	} else if bLeaf.contents.GetDataVal(bLeaf.currentSlot).Equals(bLeaf.searchKey) {
-		return true
-	} else {
-		return true
-	}
+func (bLeaf *BTreeLeaf) GetDataRID() *record.RID {
+	return nil
+}
+
+func (bLeaf *BTreeLeaf) Delete(dataRID *record.RID) {
+}
+
+func (bLeaf *BTreeLeaf) Insert(dataRID *record.RID) *DirEntry {
+	return nil
+}
+
+func (bLeaf *BTreeLeaf) tryOverFlow() bool {
+	return false
 }
