@@ -10,7 +10,7 @@ import (
 // BTreePage
 /*
 	- Holding sorted list of record, act as a list-like
-	- First 4-bytes stores the flag of the current block
+	- First 4-bytes stores the flag of the current block ( Use for dir-level or overflow leaf node)
 */
 type BTreePage struct {
 	tx           *transaction.Transaction

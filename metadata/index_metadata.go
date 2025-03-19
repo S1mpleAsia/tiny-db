@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"s1mpleasia.com/tinydb/index"
+	"s1mpleasia.com/tinydb/index/btree"
 	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
@@ -35,7 +36,12 @@ func NewIndexInfo(indexName string, fieldName string,
 }
 
 func (ii *IndexInfo) Open() index.Index {
-	return index.NewHashIndex(ii.tx, ii.indexName, ii.indexLayout)
+	treeIndex, err := btree.NewBTreeIndex(ii.tx, ii.indexName, ii.indexLayout)
+	if err != nil {
+		panic(err)
+	}
+	return treeIndex
+	//return index.NewHashIndex(ii.tx, ii.indexName, ii.indexLayout)
 }
 
 func (ii *IndexInfo) BlockAccessed() int32 {
@@ -58,6 +64,12 @@ func (ii *IndexInfo) DistinctValues(fieldName string) int32 {
 	}
 }
 
+/*
+Index layout:
++------------+-----------+--------------*-----------------*-------------+
+| block (4B) |  id (4B)  |	dataval (4B - INT || 4B + 2*len - VARCHAR)	|
++------------+-----------+--------------*-----------------*-------------+
+*/
 func (ii *IndexInfo) createIdxLayout() *record.Layout {
 	sch := record.NewSchema()
 	sch.AddIntField(INDEX_INFO_FIELD_BLOCK)

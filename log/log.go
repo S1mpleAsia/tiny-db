@@ -49,6 +49,7 @@ func (it *LogIterator) moveToBlock(block *file.BlockId) {
 }
 
 /*
+HasNext
 Current page is the most recently page
 
 +----------+---------+----------+
@@ -78,6 +79,7 @@ func (it *LogIterator) Next() []byte {
 }
 
 /*
+LogMgmt
 Responsible for log read/write operations
 -	fileMgmt: Manages file-level operations (etc. reading, writing block from disk)
 -	logFile: Name of the log file
@@ -117,12 +119,17 @@ func NewLogMgmt(fileMgmt *file.FileMgmt, logFile string) (*LogMgmt, error) {
 		}
 	} else {
 		lm.currentBlock = file.NewBlockId(logFile, logSize-1)
-		fileMgmt.Read(lm.currentBlock, logPage)
+		err := fileMgmt.Read(lm.currentBlock, logPage)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return lm, nil
 }
 
+// Block starting from 0-index
+// first 4-bytes uses for storing current size
 func (lm *LogMgmt) appendNewBlock() (*file.BlockId, error) {
 	block, err := lm.fileMgmt.Append(lm.logFile)
 
@@ -131,7 +138,10 @@ func (lm *LogMgmt) appendNewBlock() (*file.BlockId, error) {
 	}
 
 	lm.logPage.SetInt(0, int32(lm.fileMgmt.BlockSize()))
-	lm.fileMgmt.Write(block, lm.logPage)
+	err = lm.fileMgmt.Write(block, lm.logPage)
+	if err != nil {
+		return nil, err
+	}
 
 	return block, nil
 }
