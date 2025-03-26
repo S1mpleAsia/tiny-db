@@ -1,4 +1,4 @@
-package index
+package query
 
 import "s1mpleasia.com/tinydb/record"
 

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"s1mpleasia.com/tinydb/index"
 	"s1mpleasia.com/tinydb/index/btree"
 	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
@@ -35,7 +34,7 @@ func NewIndexInfo(indexName string, fieldName string,
 	return ii
 }
 
-func (ii *IndexInfo) Open() index.Index {
+func (ii *IndexInfo) Open() query.Index {
 	treeIndex, err := btree.NewBTreeIndex(ii.tx, ii.indexName, ii.indexLayout)
 	if err != nil {
 		panic(err)

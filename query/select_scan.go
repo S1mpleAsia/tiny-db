@@ -8,6 +8,9 @@ import (
 
 var ErrNotUpdatable = errors.New("scan is not updatable")
 
+var _ Scan = (*SelectScan)(nil)
+var _ UpdateScan = (*SelectScan)(nil)
+
 /* 	Select scan keep the original columns, retrieve records that sastified the predicate
  */
 type SelectScan struct {

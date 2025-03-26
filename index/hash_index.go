@@ -8,7 +8,7 @@ import (
 	"s1mpleasia.com/tinydb/transaction"
 )
 
-var _ Index = (*HashIndex)(nil)
+var _ query.Index = (*HashIndex)(nil)
 
 const NUM_BUCKETS = 100
 

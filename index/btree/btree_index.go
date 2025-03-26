@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"math"
 	"s1mpleasia.com/tinydb/file"
-	"s1mpleasia.com/tinydb/index"
+	"s1mpleasia.com/tinydb/query"
 	"s1mpleasia.com/tinydb/record"
 	"s1mpleasia.com/tinydb/transaction"
 )
 
-var _ index.Index = (*BTreeIndex)(nil)
+var _ query.Index = (*BTreeIndex)(nil)
 
 type BTreeIndex struct {
 	tx         *transaction.Transaction
