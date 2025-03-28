@@ -43,6 +43,7 @@ func NewTableScan(tx *transaction.Transaction, tableName string, layout *record.
 	return ts, nil
 }
 
+// Close the current pinned Page (Block)
 func (ts *TableScan) Close() {
 	if ts.recordPage != nil {
 		ts.tx.Unpin(ts.recordPage.Block())
@@ -153,7 +154,7 @@ func (ts *TableScan) SetVal(fieldName string, val *record.Constant) error {
 	return nil
 }
 
-// It finds the next slot with empty flag.
+// It finds the next SLOT with empty flag.
 // If it's EOF and still not found any slot -> Append new block to the file
 func (ts *TableScan) Insert() error {
 	nextSlot, err := ts.recordPage.InsertAfter(ts.currentSlot)
