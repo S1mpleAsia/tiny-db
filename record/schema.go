@@ -32,6 +32,7 @@ func (schema *Schema) AddStringField(fieldName string, length int32) {
 	schema.AddField(fieldName, VARCHAR, length)
 }
 
+// Create the schema with fieldName and metadata from existing schema sch
 func (schema *Schema) Add(fieldName string, sch *Schema) {
 	fieldType := sch.Type(fieldName)
 	fieldLength := sch.Length(fieldName)

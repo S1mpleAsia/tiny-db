@@ -123,7 +123,8 @@ func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 	return temps, nil
 }
 
-// Do 2-merge
+// Perform 1 iteration of merge phase.
+// This method is call repeatedly until it returns no more than 2 runs
 func (sp *SortPlan) doAMergeIteration(runs []*query.TempTable) ([]*query.TempTable, error) {
 	result := make([]*query.TempTable, 0)
 	for len(runs) > 1 {
