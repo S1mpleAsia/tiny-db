@@ -19,7 +19,7 @@ func BufferNeedsBestRoot(available, size int32) int32 {
 	return k
 }
 
-func BufferNeedsBestFactor(available, size int32) int32 {
+func BufferNeedsBestFactor(available, size int) int {
 	avail := available - 2
 	if avail <= 1 {
 		return 1
@@ -30,7 +30,7 @@ func BufferNeedsBestFactor(available, size int32) int32 {
 
 	for k > avail {
 		i++
-		k = int32(float64(size) / i)
+		k = int(float64(size) / i)
 	}
 
 	return k
