@@ -2,9 +2,7 @@
 
 A small, from-scratch relational database engine written in Go, built for learning.
 
-TinyDB is a Go port of **SimpleDB**, the teaching database from Edward Sciore's book
-[*Database Design and Implementation*](https://simpledb-java.netlify.app/database-design-and-implementation.pdf)
-(2nd ed., Springer). It implements a full stack — disk/file management, a write-ahead log, a
+TinyDB implements a full database stack — disk/file management, a write-ahead log, a
 buffer pool, ACID transactions, record storage, a system catalog, a SQL parser, a query
 planner, relational operators, indexing (hash + B-tree), and a `database/sql` driver — so you
 can create tables and run SQL against real files on disk.
@@ -18,8 +16,7 @@ for production.
 
 ## Architecture
 
-TinyDB is built bottom-up as a set of layered packages. Each layer corresponds to a chapter (or
-group of chapters) in the book.
+TinyDB is built bottom-up as a set of layered packages.
 
 ```
                  database/sql  ──▶  driver/            (JDBC-equivalent driver)
@@ -43,22 +40,22 @@ group of chapters) in the book.
                                        file/            (blocks, pages, file manager)
 ```
 
-| Layer | Package(s) | Book topic | Status |
-|-------|-----------|-----------|--------|
-| Disk & File Management | `file/` | Ch. 3 | ✅ Implemented |
-| Log Management | `log/` | Ch. 4 | ✅ Implemented |
-| Buffer Management | `buffer/` | Ch. 4 | ✅ Implemented |
-| Transaction Management (recovery + concurrency) | `transaction/`, `transaction/recovery/`, `transaction/concurrency/` | Ch. 5 | ✅ Implemented (undo-only recovery; lock-based concurrency) |
-| Record Management | `record/` | Ch. 6 | ✅ Implemented |
-| Metadata Management | `metadata/` | Ch. 7 | ✅ Implemented |
-| Query Processing (scans/operators) | `query/` | Ch. 8 | ✅ Implemented |
-| SQL Parsing | `parse/` | Ch. 9 | ✅ Implemented (grammar subset) |
-| Planning | `plan/` | Ch. 10 | ✅ Basic planner |
-| JDBC-style driver | `driver/` | Ch. 11 | ✅ `database/sql` driver (context APIs) |
-| Indexing | `index/`, `index/btree/` | Ch. 12 | ✅ Hash + B-tree indexes |
-| Materialization & Sorting | `query/`, `plan/` (sort, merge join, group by, aggregates) | Ch. 13 | ✅ Implemented |
-| Effective Buffer Utilization (multibuffer) | `query/`, `plan/` (chunk / multibuffer product & sort) | Ch. 14 | ✅ Implemented |
-| Query Optimization (heuristic planner) | — | Ch. 15 | ❌ Not implemented |
+| Layer | Package(s) | Status |
+|-------|-----------|--------|
+| Disk & File Management | `file/` | ✅ Implemented |
+| Log Management | `log/` | ✅ Implemented |
+| Buffer Management | `buffer/` | ✅ Implemented |
+| Transaction Management (recovery + concurrency) | `transaction/`, `transaction/recovery/`, `transaction/concurrency/` | ✅ Implemented (undo-only recovery; lock-based concurrency) |
+| Record Management | `record/` | ✅ Implemented |
+| Metadata Management | `metadata/` | ✅ Implemented |
+| Query Processing (scans/operators) | `query/` | ✅ Implemented |
+| SQL Parsing | `parse/` | ✅ Implemented (grammar subset) |
+| Planning | `plan/` | ✅ Basic planner |
+| JDBC-style driver | `driver/` | ✅ `database/sql` driver (context APIs) |
+| Indexing | `index/`, `index/btree/` | ✅ Hash + B-tree indexes |
+| Materialization & Sorting | `query/`, `plan/` (sort, merge join, group by, aggregates) | ✅ Implemented |
+| Effective Buffer Utilization (multibuffer) | `query/`, `plan/` (chunk / multibuffer product & sort) | ✅ Implemented |
+| Query Optimization (heuristic planner) | — | ❌ Not implemented |
 
 ## What's implemented
 
@@ -87,9 +84,11 @@ group of chapters) in the book.
 - External merge sort (`SortPlan`) and materialized temp tables.
 
 **Indexing**
-- Static **hash index** (100 buckets) — this is the index type wired into the catalog today.
-- Disk-backed **B-tree index** (leaf/dir pages, splits, overflow) — fully implemented in
-  `index/btree/` but not yet connected to the catalog path (see limitations).
+- Disk-backed **B-tree index** (leaf/dir pages, splits, overflow) in `index/btree/` — this is
+  the index type `metadata.IndexInfo.Open` currently returns, so it's the index used whenever
+  one is opened.
+- Static **hash index** (100 buckets) in `index/` — fully implemented, but the line that would
+  select it in `IndexInfo.Open` is commented out, so it is inactive unless switched back on.
 
 **Access**
 - A `database/sql` driver registered as **`tinydb`**, supporting prepared statements,
@@ -118,16 +117,16 @@ Predicates are conjunctions (`AND`) of equality terms, e.g. `WHERE sid = 3 AND m
 
 ## Not yet implemented / limitations
 
-- **Heuristic / cost-based query optimizer** (Ch. 15). `NewOptimizedTinyDB` and the
+- **Heuristic / cost-based query optimizer.** `NewOptimizedTinyDB` and the
   `useBasic=false` branch in `server/server.go` are a `// TODO` — only the basic planner works.
   The basic planner does not use indexes for reads and does not reorder joins.
 - **`ORDER BY`, `GROUP BY`, and aggregate functions are not in the SQL grammar.** The sort,
   group-by, and aggregate *plans/scans exist and are tested*, but they can only be used
   programmatically, not from a SQL string.
-- **B-tree index is not wired into the catalog.** `metadata.IndexInfo.Open` returns a hash
-  index, so end-to-end SQL uses hashing even though the B-tree implementation is complete.
-- **Index-aware update planner is not wired into the server** — `server.go` installs
-  `BasicUpdatePlanner`, so indexes are not automatically maintained through the default path.
+- **Indexes are not exercised by the default planners.** Although `IndexInfo.Open` returns a
+  B-tree index, `server.go` installs `BasicQueryPlanner` / `BasicUpdatePlanner`, which neither
+  read through indexes nor maintain them on writes. The index-aware `IndexUpdatePlanner` and the
+  index scans/plans exist and are tested, but are only reached by constructing them directly.
 - Recovery is **undo-only** (no redo).
 - `Planner.verifyQuery` / `verifyUpdate` are no-op stubs (no semantic validation).
 - The driver's legacy non-context `Stmt.Exec` / `Stmt.Query` panic; use the **context**
@@ -256,11 +255,6 @@ group-by), `index` (hash retrieval), and `driver` (end-to-end through `database/
 
 There are currently no dedicated tests for `server`, `cli`, `testlib`, the standalone top-level
 `btree/`, or the `index/btree/` B-tree index.
-
-## Credits
-
-Based on the design and pseudocode in Edward Sciore, *Database Design and Implementation*
-(Springer, 2020). This is an independent Go reimplementation for educational purposes.
 
 ## License
 
