@@ -1,22 +1,26 @@
 # TinyDB
 
-A small, from-scratch relational database engine written in Go, built for learning.
+## A Relational Database Engine Built From Scratch in Go
 
-TinyDB implements a full database stack — disk/file management, a write-ahead log, a
-buffer pool, ACID transactions, record storage, a system catalog, a SQL parser, a query
-planner, relational operators, indexing (hash + B-tree), and a `database/sql` driver — so you
-can create tables and run SQL against real files on disk.
+---
 
-The system is intended for **pedagogical use only**. It is not tuned for performance or meant
-for production.
+## 👋 Introduction
 
-- **Author:** S1mpleAsia
-- **Language:** Go (1.23+)
-- **Only runtime/test dependency:** [`stretchr/testify`](https://github.com/stretchr/testify)
+**TinyDB** is a small, from-scratch relational database engine written in Go. It implements a full database stack — **disk/file management, a write-ahead log, a buffer pool, ACID transactions, record storage, a system catalog, a SQL parser, a query planner, relational operators, indexing (hash + B-tree), and a `database/sql` driver** — so you can create tables and run real SQL against real files on disk.
 
-## Architecture
+The project is a hands-on study of how a database actually works under the hood: rather than reaching for an existing engine, every layer — from raw disk blocks up to the SQL front end — is implemented and wired together by hand. The system is intended for **pedagogical use only**; it is not tuned for performance or meant for production.
 
-TinyDB is built bottom-up as a set of layered packages.
+| | |
+| :--- | :--- |
+| **Author** | S1mpleAsia |
+| **Language** | Go (1.23+) |
+| **Dependencies** | [`stretchr/testify`](https://github.com/stretchr/testify) (tests only) |
+
+---
+
+## 🏗️ Architecture
+
+TinyDB is built bottom-up as a set of layered packages — each layer depends only on the ones beneath it.
 
 ```
                  database/sql  ──▶  driver/            (JDBC-equivalent driver)
@@ -57,44 +61,41 @@ TinyDB is built bottom-up as a set of layered packages.
 | Effective Buffer Utilization (multibuffer) | `query/`, `plan/` (chunk / multibuffer product & sort) | ✅ Implemented |
 | Query Optimization (heuristic planner) | — | ❌ Not implemented |
 
-## What's implemented
+---
 
-**Storage & runtime**
-- Block/page abstraction over OS files with a configurable block size (default **400 bytes**),
-  little-endian integers and UTF-16 strings (`file/`).
-- Write-ahead log with reverse-order iteration and LSN tracking (`log/`).
-- Buffer pool with pinning, naive replacement, and deadlock-avoidance via a wait timeout
-  (default pool size **8 buffers**) (`buffer/`).
-- Transactions with **commit / rollback / recover**, undo-based recovery with quiescent
-  checkpoints, and **lock-based concurrency control** (shared/exclusive locks, timeout used as
-  deadlock detection) (`transaction/`).
+## ✨ What's Implemented
 
-**Records & catalog**
-- Slotted record pages, schemas, layouts, RIDs, and typed constants (int / varchar) (`record/`).
-- System catalog: table metadata (`tblcat`/`fldcat`), views (`viewcat`), indexes (`idxcat`),
-  and cost statistics (`metadata/`).
+### 💾 Storage & Runtime
 
-**Query engine**
-- Relational operators as scans: table, select, project, product, plus index select/join,
-  merge join, sort, group-by with **count / min / max** aggregates, and multibuffer variants
-  (`query/`).
-- SQL lexer + recursive-descent parser (`parse/`).
-- Basic query planner (view expansion, cross products, select, project) and both a **basic**
-  and an **index-aware** update planner (`plan/`).
-- External merge sort (`SortPlan`) and materialized temp tables.
+- **Block/page abstraction** over OS files with a configurable block size (default **400 bytes**), little-endian integers and UTF-16 strings (`file/`).
+- **Write-ahead log** with reverse-order iteration and LSN tracking (`log/`).
+- **Buffer pool** with pinning, naive replacement, and deadlock-avoidance via a wait timeout (default pool size **8 buffers**) (`buffer/`).
+- **Transactions** with **commit / rollback / recover**, undo-based recovery with quiescent checkpoints, and **lock-based concurrency control** (shared/exclusive locks, timeout used as deadlock detection) (`transaction/`).
 
-**Indexing**
-- Disk-backed **B-tree index** (leaf/dir pages, splits, overflow) in `index/btree/` — this is
-  the index type `metadata.IndexInfo.Open` currently returns, so it's the index used whenever
-  one is opened.
-- Static **hash index** (100 buckets) in `index/` — fully implemented, but the line that would
-  select it in `IndexInfo.Open` is commented out, so it is inactive unless switched back on.
+### 🗃️ Records & Catalog
 
-**Access**
-- A `database/sql` driver registered as **`tinydb`**, supporting prepared statements,
-  transactions, exec, and query via the context-based APIs (`driver/`).
+- **Slotted record pages**, schemas, layouts, RIDs, and typed constants (int / varchar) (`record/`).
+- **System catalog**: table metadata (`tblcat`/`fldcat`), views (`viewcat`), indexes (`idxcat`), and cost statistics (`metadata/`).
 
-### Supported SQL
+### 🔎 Query Engine
+
+- **Relational operators as scans**: table, select, project, product, plus index select/join, merge join, sort, group-by with **count / min / max** aggregates, and multibuffer variants (`query/`).
+- **SQL lexer + recursive-descent parser** (`parse/`).
+- **Query planning**: a basic query planner (view expansion, cross products, select, project) and both a **basic** and an **index-aware** update planner (`plan/`).
+- **External merge sort** (`SortPlan`) and materialized temp tables.
+
+### 🌳 Indexing
+
+- Disk-backed **B-tree index** (leaf/dir pages, splits, overflow) in `index/btree/` — this is the index type `metadata.IndexInfo.Open` currently returns, so it's the index used whenever one is opened.
+- Static **hash index** (100 buckets) in `index/` — fully implemented, but the line that would select it in `IndexInfo.Open` is commented out, so it is inactive unless switched back on.
+
+### 🔌 Access
+
+- A `database/sql` driver registered as **`tinydb`**, supporting prepared statements, transactions, exec, and query via the context-based APIs (`driver/`).
+
+---
+
+## 🧩 Supported SQL
 
 The parser grammar (see the header comment in `parse/parser.go`) covers:
 
@@ -115,30 +116,11 @@ CREATE INDEX i ON t (f)
 
 Predicates are conjunctions (`AND`) of equality terms, e.g. `WHERE sid = 3 AND major = 'math'`.
 
-## Not yet implemented / limitations
+---
 
-- **Heuristic / cost-based query optimizer.** `NewOptimizedTinyDB` and the
-  `useBasic=false` branch in `server/server.go` are a `// TODO` — only the basic planner works.
-  The basic planner does not use indexes for reads and does not reorder joins.
-- **`ORDER BY`, `GROUP BY`, and aggregate functions are not in the SQL grammar.** The sort,
-  group-by, and aggregate *plans/scans exist and are tested*, but they can only be used
-  programmatically, not from a SQL string.
-- **Indexes are not exercised by the default planners.** Although `IndexInfo.Open` returns a
-  B-tree index, `server.go` installs `BasicQueryPlanner` / `BasicUpdatePlanner`, which neither
-  read through indexes nor maintain them on writes. The index-aware `IndexUpdatePlanner` and the
-  index scans/plans exist and are tested, but are only reached by constructing them directly.
-- Recovery is **undo-only** (no redo).
-- `Planner.verifyQuery` / `verifyUpdate` are no-op stubs (no semantic validation).
-- The driver's legacy non-context `Stmt.Exec` / `Stmt.Query` panic; use the **context**
-  variants (`ExecContext` / `QueryContext` / `BeginTx`), as `database/sql` does automatically.
-- The interactive shell (`cli/`) is a skeleton that prints placeholders and is not wired to the
-  engine. `main.go` is effectively empty.
-- The top-level `btree/` package is a standalone integer-keyed B-tree, separate from the
-  database and not connected to the rest of the engine.
+## ⚙️ Getting Started
 
-## Getting started
-
-Requires Go 1.23+.
+Requires **Go 1.23+**.
 
 ```bash
 git clone <this-repo>
@@ -148,8 +130,7 @@ go test ./...
 
 ### Using TinyDB through `database/sql`
 
-The easiest way to use the engine is via the registered driver. The DSN is simply the directory
-where the database files should live.
+The easiest way to use the engine is via the registered driver. The DSN is simply the directory where the database files should live.
 
 ```go
 package main
@@ -196,8 +177,7 @@ func main() {
 }
 ```
 
-See `driver/driver_test.go` for a complete, runnable example that creates a table, inserts,
-queries, updates, rolls back, and deletes.
+See `driver/driver_test.go` for a complete, runnable example that creates a table, inserts, queries, updates, rolls back, and deletes.
 
 ### Using the engine directly
 
@@ -219,7 +199,9 @@ for scan.Next() {
 tx.Commit()
 ```
 
-## Project layout
+---
+
+## 📁 Project Layout
 
 ```
 file/                 Blocks, pages, and the file manager
@@ -242,21 +224,35 @@ cli/                  Interactive shell skeleton (stub)
 testlib/              Test-data helpers (university schema)
 ```
 
-## Testing
+> Each package has its own `README.md` with details on its types, API, and how it fits into the stack — see [`docs/README.md`](docs/README.md) for the full index.
+
+---
+
+## 🧪 Testing
 
 ```bash
 go test ./...
 ```
 
-Test coverage exists for: `file`, `log`, `buffer`, `transaction` (including concurrency and
-lock-timeout tests), `record`, `metadata`, `parse` (lexer, predicate parser, query parser),
-`query` (scans, join+select, table scan), `plan` (single/multi-table, sort, merge-join,
-group-by), `index` (hash retrieval), and `driver` (end-to-end through `database/sql`).
+Test coverage exists for: `file`, `log`, `buffer`, `transaction` (including concurrency and lock-timeout tests), `record`, `metadata`, `parse` (lexer, predicate parser, query parser), `query` (scans, join+select, table scan), `plan` (single/multi-table, sort, merge-join, group-by), `index` (hash retrieval), and `driver` (end-to-end through `database/sql`).
 
-There are currently no dedicated tests for `server`, `cli`, `testlib`, the standalone top-level
-`btree/`, or the `index/btree/` B-tree index.
+There are currently no dedicated tests for `server`, `cli`, `testlib`, the standalone top-level `btree/`, or the `index/btree/` B-tree index.
 
-## License
+---
+
+## 🚧 Limitations
+
+- **Heuristic / cost-based query optimizer.** `NewOptimizedTinyDB` and the `useBasic=false` branch in `server/server.go` are a `// TODO` — only the basic planner works. The basic planner does not use indexes for reads and does not reorder joins.
+- **`ORDER BY`, `GROUP BY`, and aggregate functions are not in the SQL grammar.** The sort, group-by, and aggregate *plans/scans exist and are tested*, but they can only be used programmatically, not from a SQL string.
+- **Indexes are not exercised by the default planners.** Although `IndexInfo.Open` returns a B-tree index, `server.go` installs `BasicQueryPlanner` / `BasicUpdatePlanner`, which neither read through indexes nor maintain them on writes. The index-aware `IndexUpdatePlanner` and the index scans/plans exist and are tested, but are only reached by constructing them directly.
+- Recovery is **undo-only** (no redo).
+- `Planner.verifyQuery` / `verifyUpdate` are no-op stubs (no semantic validation).
+- The driver's legacy non-context `Stmt.Exec` / `Stmt.Query` panic; use the **context** variants (`ExecContext` / `QueryContext` / `BeginTx`), as `database/sql` does automatically.
+- The interactive shell (`cli/`) is a skeleton that prints placeholders and is not wired to the engine. `main.go` is effectively empty.
+- The top-level `btree/` package is a standalone integer-keyed B-tree, separate from the database and not connected to the rest of the engine.
+
+---
+
+## 📄 License
 
 See [LICENSE](LICENSE).
-```
